@@ -557,7 +557,14 @@ body {
 .typing span:nth-child(3) { animation-delay: 0.3s; }
 @keyframes typingDot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }
 
-.chat-hint { text-align: center; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); opacity: 0.6; padding-top: 8px; flex-shrink: 0; }
+.chat-hint {
+  align-self: center; display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+  opacity: 0.9; padding: 6px 14px; margin-top: 2px;
+  background: var(--bg-panel); border-radius: 20px; flex-shrink: 0;
+}
+.chat-hint-icon { flex-shrink: 0; animation: chatHintNudge 1.3s ease-in-out infinite; }
+@keyframes chatHintNudge { 0%, 100% { transform: translateX(0); opacity: 0.65; } 50% { transform: translateX(3px); opacity: 1; } }
 .chat-done-actions { padding-top: 12px; flex-shrink: 0; }
 
 /* ============================================================

@@ -777,7 +777,6 @@ function renderChat() {
         </div>
       </div>
       <div class="chat-scroll" id="chat-scroll"></div>
-      <div class="chat-hint" id="chat-hint">tap to skip ahead</div>
       <div class="chat-done-actions hidden" id="chat-done"></div>
     </div>
   `);
@@ -789,7 +788,19 @@ function renderChat() {
 
   const scroll = s.querySelector("#chat-scroll");
   const doneWrap = s.querySelector("#chat-done");
-  const hint = s.querySelector("#chat-hint");
+
+  // Lives inside the scroll flow (not pinned to the screen) so it rides
+  // along right after the newest bubble instead of sitting stranded at
+  // the bottom of the screen.
+  const hint = el(`
+    <div class="chat-hint" id="chat-hint">
+      <svg class="chat-hint-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 4 14 12 6 20"></polyline>
+        <polyline points="13 4 21 12 13 20"></polyline>
+      </svg>
+      <span>Tap to message instantaneously</span>
+    </div>
+  `);
 
   const script = match.opener.concat(match.tones[cs.tone]).concat(match.closer);
 
@@ -803,6 +814,13 @@ function renderChat() {
     scroll.scrollTop = scroll.scrollHeight;
   }
 
+  // Re-appends the hint as the last item in the scroll, so it always
+  // trails the most recent bubble (or typing indicator) as the chat plays.
+  function pinHint() {
+    if (hint.classList.contains("hidden")) return;
+    scroll.appendChild(hint);
+  }
+
   function addBubble(msg) {
     const bubble = el(`<div class="bubble ${msg.from}">${msg.text}</div>`);
     scroll.appendChild(bubble);
@@ -813,11 +831,13 @@ function renderChat() {
         scrollBottom();
       }, popDelay);
     }
+    pinHint();
     scrollBottom();
   }
 
   function renderEndedFooter() {
     hint.classList.add("hidden");
+    hint.remove();
     scroll.appendChild(el(`<div class="bubble system">connection unstable across dimensions</div>`));
     scrollBottom();
     doneWrap.classList.remove("hidden");
@@ -855,6 +875,7 @@ function renderChat() {
 
     const typing = el(`<div class="typing ${msg.from}"><span></span><span></span><span></span></div>`);
     scroll.appendChild(typing);
+    pinHint();
     scrollBottom();
     const t = setTimeout(() => {
       typing.remove();
