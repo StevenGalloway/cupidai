@@ -49,14 +49,35 @@ Leave `photo` unset (or `null`) for any character you haven't shot yet — the p
 
 **Azure Static Web Apps' Free tier costs $0/month** — 100 GB of bandwidth and free SSL, which is wildly more than one person swiping on their phone will ever use. This is a static site with no server, so there's genuinely no ongoing cost here.
 
-### Easiest path: deploy straight from your machine (no GitHub needed)
+### Current setup: GitHub-connected deploy (this repo)
+
+This repo is already connected to an Azure Static Web App via GitHub Actions — Azure committed a workflow file at `.github/workflows/azure-static-web-apps-*.yml` when it was set up. That means:
+
+- **`git push` (or merging a PR) to `main` is the whole deploy process.** No manual commands needed.
+- Every push to `main` kicks off the `Azure Static Web Apps CI/CD` workflow, which builds (no real build step for a static site) and uploads the site.
+- Every pull request against `main` also gets its own temporary preview deployment, which is automatically torn down when the PR closes.
+
+**How to know when a deployment is done:** go to the repo's **Actions** tab on GitHub.
+- A yellow/orange dot = still running.
+- A green check = deployed successfully — that push is now live.
+- A red X = it failed; click into the run to see which step errored (usually a bad token or a syntax issue in the workflow file itself, not your site code).
+
+Deploys of this static site are fast — typically under a minute (see the `50s` / `1m 8s` durations in the Actions history). Once it's green, refresh your live URL (Azure Portal → the Static Web App resource → **Overview** → **URL**, or `*.azurestaticapps.net`) to see the change.
+
+### Alternative: deploy straight from your machine (no GitHub needed)
+
+Useful if you ever want to push a one-off change without going through Git, or you're setting this up fresh without connecting GitHub at all.
 
 1. **Install the Azure CLI** if you don't have it: https://learn.microsoft.com/cli/azure/install-azure-cli
 2. Log in:
    ```
    az login
    ```
-3. Create a resource group (a free-form container for the resource) and the Static Web App itself:
+3. Find your existing Static Web App's name (Azure auto-generates one like `calm-cliff-00f3a0b0f` when connected via the Portal/GitHub flow — it won't necessarily be `neuromatch-app`):
+   ```
+   az staticwebapp list -o table
+   ```
+   Or, to create a brand new one from scratch instead:
    ```
    az group create --name neuromatch-rg --location eastus2
 
@@ -68,23 +89,15 @@ Leave `photo` unset (or `null`) for any character you haven't shot yet — the p
    ```
 4. Get the deployment token (a secret key that lets you push files to it):
    ```
-   az staticwebapp secrets list --name neuromatch-app --resource-group neuromatch-rg --query "properties.apiKey" -o tsv
+   az staticwebapp secrets list --name <your-app-name> --resource-group <your-resource-group> --query "properties.apiKey" -o tsv
    ```
-5. From inside the `neuromatch` folder, deploy the files directly using the SWA CLI (this runs via `npx`, no permanent install needed):
+5. From inside the project folder, deploy the files directly using the SWA CLI (this runs via `npx`, no permanent install needed):
    ```
    npx @azure/static-web-apps-cli deploy ./ --deployment-token <paste-token-here> --env production
    ```
-6. It'll print your live URL — something like `https://neuromatch-app.azurestaticapps.net`. Open it on her phone (text her the link, or generate a QR code for it) and you're done.
+6. It'll print your live URL. Open it on her phone (text her the link, or generate a QR code for it) and you're done.
 
-To push an update later (new photos, edited scripts), just re-run the `npx ... deploy` command from step 5.
-
-### Alternative: GitHub-connected deploy (better if you'll keep tweaking it over time)
-
-1. Push this folder to a new GitHub repo (can be private).
-2. In the [Azure Portal](https://portal.azure.com), create a resource → **Static Web App**.
-3. Choose the **Free** plan, connect your GitHub account, and select the repo/branch.
-4. Build details: **App location** = `/`, **Output location** = leave blank (no build step).
-5. Azure automatically commits a GitHub Actions workflow to your repo that deploys on every push to that branch — from then on, `git push` is your whole deploy process.
+**Note:** if this app is already GitHub-connected (see above), the next automatic push-triggered deploy will simply overwrite whatever you push manually — so pick one method as your primary path to avoid confusing yourself about which version is live.
 
 ### Optional: custom domain
 Both paths support attaching a custom domain for free SSL if you own one (e.g. `ourlittlecorner.com`) — do this from the Static Web App's **Custom domains** blade in the Azure Portal. Entirely optional; the default `*.azurestaticapps.net` URL works fine and costs nothing.
