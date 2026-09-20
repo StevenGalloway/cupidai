@@ -141,6 +141,11 @@ function checkAchievements() {
     if (!state.achievements.includes(a.id) && achievementSatisfied(a.id)) {
       state.achievements.push(a.id);
       newlyUnlocked.push(a);
+      Analytics.track("achievement_unlocked", {
+        achievementId: a.id,
+        title: a.title,
+        totalUnlocked: state.achievements.length,
+      });
     }
   });
   if (newlyUnlocked.length > 0) {
@@ -253,6 +258,7 @@ function openSettings() {
       </button>
     `);
     card.addEventListener("click", () => {
+      Analytics.track("theme_changed", { from: state.theme, to: t.key });
       applyTheme(t.key);
       state.themeChangedManually = true;
       checkAchievements();
@@ -279,6 +285,13 @@ function openSettings() {
 
   modal.querySelector("#settings-reset").addEventListener("click", () => {
     if (confirm("Reset all swipes, matches, and chat progress? This can't be undone.")) {
+      Analytics.track("profile_reset", {
+        swipes: Object.keys(state.decisions).length,
+        matches: state.matches.length,
+        chatsCompleted: completedCount(),
+        achievements: state.achievements.length,
+      });
+      Analytics.flush(); // the page reloads immediately, so send now
       localStorage.removeItem(STORAGE_KEY);
       location.reload();
     }
@@ -792,7 +805,16 @@ function renderChat() {
   // Leaving the chat (back button, or navigating elsewhere via goto) pauses
   // playback exactly where it is — goto() clears all pending timers, and
   // progressIndex (saved after every message) is what lets us resume later.
-  s.querySelector(".back").addEventListener("click", () => goto("matches"));
+  s.querySelector(".back").addEventListener("click", () => {
+    if (!cs.completed) {
+      Analytics.track("chat_exited_early", {
+        matchId: match.id,
+        tone: cs.tone,
+        progressIndex: cs.progressIndex || 0,
+      });
+    }
+    goto("matches");
+  });
 
   const scroll = s.querySelector("#chat-scroll");
   const doneWrap = s.querySelector("#chat-done");

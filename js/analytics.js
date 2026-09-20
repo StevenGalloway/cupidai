@@ -62,5 +62,5 @@ const Analytics = (() => {
   window.addEventListener("pagehide", flush);
 
   init();
-  return { track };
+  return { track, flush };
 })();
