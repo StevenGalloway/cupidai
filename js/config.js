@@ -54,4 +54,8 @@ const CONFIG = {
   // Optional custom finale message. Leave as null to use the default
   // written in js/data.js (REVEAL.message).
   REVEAL_MESSAGE_OVERRIDE: null,
+
+  // Azure Application Insights connection string (Azure Portal > your
+  // Application Insights resource > Overview). Leave null to disable tracking.
+  APPINSIGHTS_CONNECTION_STRING: "InstrumentationKey=d410dbe1-576b-4f50-b3fe-64fc46c41779;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com/;ApplicationId=a03943ae-0deb-4028-b2fe-a5b63d5e5666",
 };

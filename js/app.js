@@ -446,8 +446,8 @@ function renderSwipe() {
   if (activeCount > 0) {
     matchesBtn.appendChild(el(`<span class="badge">${activeCount}</span>`));
   }
-  nopeBtn.addEventListener("click", () => decide(getMatch(stackIds[0]).id, "no"));
-  likeBtn.addEventListener("click", () => decide(getMatch(stackIds[0]).id, "yes"));
+  nopeBtn.addEventListener("click", () => decide(getMatch(stackIds[0]).id, "no", "button"));
+  likeBtn.addEventListener("click", () => decide(getMatch(stackIds[0]).id, "yes", "button"));
   matchesBtn.addEventListener("click", () => goto("matches"));
   controls.appendChild(nopeBtn);
   controls.appendChild(likeBtn);
@@ -535,7 +535,7 @@ function attachSwipeHandlers(card, match) {
     card.style.transition = "transform 0.3s ease";
     if (Math.abs(dx) > 100) {
       const dir = dx > 0 ? "yes" : "no";
-      flyOff(card, dir, () => decide(match.id, dir));
+      flyOff(card, dir, () => decide(match.id, dir, "drag"));
     } else {
       card.style.transform = "translate(0,0) rotate(0)";
       likeStamp.style.opacity = 0;
@@ -563,8 +563,14 @@ function flyOff(card, dir, callback) {
   setTimeout(callback, 260);
 }
 
-function decide(id, decision) {
+function decide(id, decision, method) {
   state.decisions[id] = decision;
+  Analytics.track("swipe", {
+    matchId: id,
+    direction: decision === "yes" ? "right" : "left",
+    method,
+    swipeNumber: Object.keys(state.decisions).length,
+  });
   if (decision === "yes") {
     state.matches.push(id);
     saveProgress();
@@ -578,6 +584,7 @@ function decide(id, decision) {
 }
 
 function reconsider(id) {
+  Analytics.track("reconsider", { matchId: id });
   state.decisions[id] = "yes";
   if (!state.matches.includes(id)) state.matches.push(id);
   state.reconsiderCount = (state.reconsiderCount || 0) + 1;
@@ -743,6 +750,7 @@ function renderStyleSelect() {
       </div>
     `);
     card.addEventListener("click", () => {
+      Analytics.track("tone_selected", { matchId: state.activeMatchId, tone: key });
       state.chatState[state.activeMatchId] = { tone: key, completed: false };
       saveProgress();
       goto("chat");
@@ -848,6 +856,10 @@ function renderChat() {
     cs.completed = true;
     cs.progressIndex = script.length;
     saveProgress();
+    Analytics.track("chat_completed", { matchId: match.id, tone: cs.tone, completedCount: completedCount() });
+    if (completedCount() === CONFIG.REVEAL_UNLOCK_COUNT) {
+      Analytics.track("secret_match_unlocked", { completedCount: completedCount() });
+    }
     checkAchievements();
     renderEndedFooter();
   }
@@ -899,6 +911,7 @@ function renderChat() {
    SCREEN 8 — BONUS REVEAL
    ============================================================ */
 function renderReveal() {
+  Analytics.track("secret_match_viewed");
   const message = CONFIG.REVEAL_MESSAGE_OVERRIDE || REVEAL.message;
   const photoInner = CONFIG.REVEAL_PHOTO
     ? `<img src="${CONFIG.REVEAL_PHOTO}" alt="">`
