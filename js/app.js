@@ -1,6 +1,10 @@
 /* ============================================================
    NEUROMATCH — app logic
    ============================================================ */
+// If telemetry.js was blocked (ad blocker, network), fall back to a no-op
+// so the rest of the app never notices.
+window.Analytics = window.Analytics || { track() {}, flush() {} };
+
 const root = document.getElementById("app");
 const STORAGE_KEY = "nm_progress_v1";
 

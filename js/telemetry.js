@@ -5,7 +5,7 @@
    request IP by App Insights; device/browser/OS come from the
    user agent. Nothing here prompts the user for anything.
    ============================================================ */
-const Analytics = (() => {
+window.Analytics = (() => {
   const CDN = "https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js";
   let ai = null;
   const queue = []; // calls made before the SDK finishes loading
@@ -51,16 +51,23 @@ const Analytics = (() => {
     document.head.appendChild(script);
   }
 
+  // Public methods swallow every error: analytics must never break the app.
   function track(name, props) {
-    if (ai) ai.trackEvent({ name }, props);
-    else if (queue.length < 50) queue.push({ name, props });
+    try {
+      if (ai) ai.trackEvent({ name }, props);
+      else if (queue.length < 50) queue.push({ name, props });
+    } catch (e) {}
   }
 
   function flush() {
-    if (ai) ai.flush(false); // false = send synchronously via beacon
+    try {
+      if (ai) ai.flush(false); // false = send synchronously via beacon
+    } catch (e) {}
   }
   window.addEventListener("pagehide", flush);
 
-  init();
+  try {
+    init();
+  } catch (e) {}
   return { track, flush };
 })();
